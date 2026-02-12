@@ -1,6 +1,7 @@
 package com.avinash.myapsrtc.core.domain.model
 
 data class Waypoint(
+    val ETA: Long,
     val departureDay: String,
     val latitude: String,
     val longitude: String,
@@ -8,6 +9,7 @@ data class Waypoint(
     val placeId: String,
     val placeName: String,
     val placeTime: String,
+    val refreshedAt: Long,
     val scheduleArrTime: String,
     val scheduleDepTime: String,
     val seqNo: Int,

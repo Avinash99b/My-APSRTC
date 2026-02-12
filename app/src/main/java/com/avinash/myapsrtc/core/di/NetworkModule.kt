@@ -1,5 +1,6 @@
 package com.avinash.myapsrtc.core.di
 
+import com.avinash.myapsrtc.core.domain.model.FirebaseRetrofit
 import com.avinash.myapsrtc.core.network.RetrofitProvider
 import dagger.Module
 import dagger.Provides
@@ -12,4 +13,7 @@ import retrofit2.Retrofit
 class NetworkModule {
     @Provides
     fun provideRetrofit(): Retrofit = RetrofitProvider.create()
+
+    @Provides
+    fun provideFirebaseRetrofit(): FirebaseRetrofit = RetrofitProvider.createFirebase()
 }

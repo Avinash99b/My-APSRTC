@@ -1,20 +1,13 @@
 package com.avinash.myapsrtc.core.domain.model
 
 data class Place(
-    val ETA: Long,
-    val departureDay: String,
+    val district: String,
     val latitude: String,
+    val linkPlaceId: String,
     val longitude: String,
-    val placeCode: String,
+    val mandalName: String,
+    val pinCode: String,
     val placeId: String,
     val placeName: String,
-    val placeTime: String,
-    val refreshedAt: Long,
-    val scheduleArrTime: String,
-    val scheduleDepTime: String,
-    val seqNo: Int,
-    val stationDay: String,
-    val stationId: String,
-    val stationName: String,
-    val wayPointName: String
+    val stateCode: String
 )
