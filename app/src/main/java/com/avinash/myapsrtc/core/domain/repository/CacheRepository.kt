@@ -47,8 +47,8 @@ class CacheRepository @Inject constructor(
 
     val Service_Cache_Grace_Hours = 1
 
-    fun getServices(): List<ServiceDetails>?{
-        val cachedTime = sharedPrefs.getLong("servicesCachedTime",0)
+    fun getServices(route:Pair<String, String>): List<ServiceDetails>?{
+        val cachedTime = sharedPrefs.getLong("servicesCachedTime-${route.first}-${route.second}",0)
         val currentTime = System.currentTimeMillis()
 
         if(currentTime - cachedTime > Service_Cache_Grace_Hours * 60 * 60 * 1000){
@@ -56,7 +56,7 @@ class CacheRepository @Inject constructor(
         }
 
 
-        val servicesJson = sharedPrefs.getString("servicesJson",null)
+        val servicesJson = sharedPrefs.getString("servicesJson-${route.first}-${route.second}",null)
         servicesJson?.let {
             if(it.isEmpty()){
                 return null

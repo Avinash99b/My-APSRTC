@@ -1,20 +1,19 @@
-package com.avinash.myapsrtc.feature_route_selection.ui.compnents
+package com.avinash.myapsrtc.feature_live_tracking.ui.compnents
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.avinash.myapsrtc.R
-import com.avinash.myapsrtc.core.domain.model.ApiState
-import com.avinash.myapsrtc.core.domain.model.ServiceDetails
 import com.avinash.myapsrtc.core.domain.model.TrackingDetails
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -24,6 +23,9 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.core.graphics.createBitmap
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLngBounds
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,6 +36,26 @@ fun LiveTrackingMap(
     busDetails: Map<String, TrackingDetails>
 ) {
     val cameraState = rememberCameraPositionState()
+
+    // survives recomposition
+    val hasZoomed = rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(busDetails.isNotEmpty()) {
+        if (busDetails.isEmpty() || hasZoomed.value) return@LaunchedEffect
+
+        val bounds = LatLngBounds.Builder().apply {
+            busDetails.values.forEach {
+                include(LatLng(it.latitude, it.longitude))
+            }
+        }.build()
+
+        hasZoomed.value = true
+
+        cameraState.animate(
+            update = CameraUpdateFactory.newLatLngBounds(bounds, 120),
+            durationMs = 900
+        )
+    }
 
     GoogleMap(
         modifier = Modifier.fillMaxSize(),

@@ -1,4 +1,4 @@
-package com.avinash.myapsrtc.feature_route_selection.ui.compnents
+package com.avinash.myapsrtc.feature_live_tracking.ui.compnents
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +40,7 @@ fun ServiceRow(
                 text = service.serviceType,
                 fontWeight = FontWeight.Bold
             )
-            Text("Trip ${service.tripNo}")
+            Text(" - ${tracking?.busNumber ?: service.serviceStartTime}")
         }
 
         Text(

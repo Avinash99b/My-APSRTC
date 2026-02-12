@@ -1,5 +1,6 @@
 package com.avinash.myapsrtc.feature_live_tracking.domain.repository
 
+import android.util.Log
 import com.avinash.myapsrtc.core.domain.model.ApiState
 import com.avinash.myapsrtc.core.domain.model.Place
 import com.avinash.myapsrtc.core.domain.model.ServiceDetails
@@ -19,8 +20,9 @@ class ServicesRepositoryImpl @Inject constructor(
         destinationPlace: Place
     ): ApiState<List<ServiceDetails>> {
         try{
-            val cachedServices = cacheRepository.getServices()
+            val cachedServices = cacheRepository.getServices(Pair(startPlace.placeId,destinationPlace.placeId))
             if(cachedServices != null){
+                Log.d("ServiceRepository","Using cached services")
                 return ApiState.Success(cachedServices)
             }
 
