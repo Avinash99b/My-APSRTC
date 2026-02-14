@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitProvider {
     val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply { setLevel(HttpLoggingInterceptor.Level.BODY) })
+        .addInterceptor(HttpLoggingInterceptor().apply { setLevel(HttpLoggingInterceptor.Level.NONE) })
         .build()
     fun create(): Retrofit=Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
@@ -27,6 +27,7 @@ object RetrofitProvider {
 
     fun createFirebase(): FirebaseRetrofit = FirebaseRetrofit(
         Retrofit.Builder()
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .baseUrl("https://firestore.googleapis.com/v1/projects/apsrtc-uts-prod/databases/(default)/documents/")
             .build()

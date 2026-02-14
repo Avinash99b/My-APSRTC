@@ -1,10 +1,22 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-
+    id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    FileInputStream(localPropertiesFile).use { input ->
+        localProperties.load(input)
+    }
+}
+println(">>> MAPS_API_KEY = ${localProperties.getProperty("mapkey")}")
 
 android {
     namespace = "com.avinash.myapsrtc"
@@ -20,10 +32,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        val mapsKey = localProperties.getProperty("mapkey")
+            ?: error("❌ MAPS_API_KEY is missing. Check local.properties")
+
+        manifestPlaceholders["MAPS_API_KEY"] = mapsKey
     }
 
     buildTypes {
-        val apiKey = project.properties["MAPS_API_KEY"]?:""
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -31,13 +48,6 @@ android {
                 "proguard-rules.pro"
             )
 
-
-            manifestPlaceholders["MAPS_API_KEY"] = apiKey
-        }
-
-        debug {
-
-            manifestPlaceholders["MAPS_API_KEY"] = apiKey
         }
     }
     compileOptions {
@@ -66,7 +76,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
+    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation("com.google.firebase:firebase-analytics")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     ksp(libs.androidx.room.compiler)
     implementation(libs.hilt.android)
