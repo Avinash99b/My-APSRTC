@@ -13,8 +13,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,6 +48,10 @@ fun LiveTrackingHome(
         mutableStateMapOf<String, TrackingDetails>()
     }
 
+    var selectedBus by remember {
+        mutableStateOf<TrackingDetails?>(null)
+    }
+
     LaunchedEffect(busDetails) {
         filteredBusDetails.clear()
 
@@ -63,14 +69,19 @@ fun LiveTrackingHome(
         sheetContent = {
             ServiceBottomSheet(
                 servicesState = servicesState,
-                busDetails = filteredBusDetails
-            )
+                busDetails = filteredBusDetails,
+                selectedBus,
+            ){
+                selectedBus=it
+            }
         }
     ) { padding ->
 
         Box(Modifier.fillMaxSize().padding(padding)) {
 
-            LiveTrackingMap(filteredBusDetails)
+            LiveTrackingMap(filteredBusDetails){
+                selectedBus = it
+            }
 
             Column {
                 TopStatusBar(

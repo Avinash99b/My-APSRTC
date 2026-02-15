@@ -46,7 +46,8 @@ import kotlin.math.sin
 
 @Composable
 fun LiveTrackingMap(
-    busDetails: Map<String, TrackingDetails>
+    busDetails: Map<String, TrackingDetails>,
+    onBusSelected:(TrackingDetails?)-> Unit
 ) {
 
     val cameraState = rememberCameraPositionState()
@@ -69,7 +70,11 @@ fun LiveTrackingMap(
     ) {
         busDetails.forEach {
             key(it.value.vehicleNumber) {
-                BusMarker(it.value)
+                BusMarker(it.value,onBusSelected={
+                    onBusSelected(it.value)
+                },onBusDeselected = {
+                    onBusSelected(null)
+                })
             }
         }
     }
@@ -78,7 +83,9 @@ fun LiveTrackingMap(
 
 @Composable
 fun BusMarker(
-    trackingDetails: TrackingDetails
+    trackingDetails: TrackingDetails,
+    onBusSelected: ()-> Unit,
+    onBusDeselected:()-> Unit
 ) {
     val context = LocalContext.current
 
@@ -119,9 +126,10 @@ fun BusMarker(
         val latDiff = newLat - prevLat
         val lngDiff = newLng - prevLng
 
+        //Rounding it to 1.5 scale for better animation
         val updateIntervalMs =
             (trackingDetails.refreshedAtMillis!! - prev.refreshedAtMillis!!)
-                .coerceAtLeast(500L) // avoid divide-by-zero
+                .coerceAtLeast(500L) * 1.5.toLong()
 
         val frameDelayMs = 16L // ~60 FPS
         val startTime = System.currentTimeMillis()
@@ -157,7 +165,14 @@ fun BusMarker(
             context
         ),
         title = trackingDetails.vehicleNumber,
-        snippet = "Last updated at: ${formatTime(trackingDetails.refreshedAtMillis!!)}"
+        snippet = "Last updated at: ${formatTime(trackingDetails.refreshedAtMillis!!)}",
+        onClick = {
+            onBusSelected()
+            false
+        },
+        onInfoWindowClose = {
+            onBusDeselected()
+        }
     )
 }
 
