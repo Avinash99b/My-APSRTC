@@ -1,5 +1,6 @@
 package com.avinash.myapsrtc.feature_live_tracking.viewmodel
 
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.avinash.myapsrtc.core.domain.model.ApiState
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.sample
@@ -60,7 +62,7 @@ class LiveTrackingHomeViewModel @Inject constructor(
     /* ---------------- Tracking (FAST) ---------------- */
 
     private val _busDetails =
-        MutableStateFlow<Map<String, TrackingDetails>>(emptyMap())
+        MutableStateFlow<Map<String, TrackingDetails>>(mutableStateMapOf())
     val busDetails = _busDetails.asStateFlow()
 
     /* ---------------- Tracking (UI-SAFE) ---------------- */
@@ -71,7 +73,7 @@ class LiveTrackingHomeViewModel @Inject constructor(
      */
     val uiBusDetails: StateFlow<Map<String, TrackingDetails>> =
         busDetails
-            .sample(500) // max 2 UI updates / second
+            .sample(500)
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000),
@@ -108,6 +110,12 @@ class LiveTrackingHomeViewModel @Inject constructor(
     private fun startMonitoring() {
         monitoringJob?.cancel()
 
+        //Set initial delay for 5 seconds for first 20 seconds to collect data for interpolations
+        _requestDelay.value = 5
+        viewModelScope.launch {
+            delay(20_000)
+            _requestDelay.value = 30
+        }
         val servicesState = _availableServices.value
         if (servicesState !is ApiState.Success) return
 
@@ -156,9 +164,12 @@ class LiveTrackingHomeViewModel @Inject constructor(
 
     /* ---------------- Derived helpers (UI) ---------------- */
 
+    /*
+    Returns true if bus last refreshed time is greater than 5 mins
+     */
     fun isBusStale(tracking: TrackingDetails): Boolean {
         val now = System.currentTimeMillis()
-        return now - tracking.locationTimeMillis > 30_000
+        return now - (tracking.refreshedAtMillis?:0) >= 5 * 60 * 1000
     }
 
     fun lastUpdatedSeconds(tracking: TrackingDetails): Long {

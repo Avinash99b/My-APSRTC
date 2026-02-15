@@ -21,7 +21,6 @@ class TrackingRepositoryImpl @Inject constructor(
 
             return if(mappedTrackingDetails!=null) ApiState.Success(mappedTrackingDetails) else ApiState.Failure("Unknown Error")
         }catch (e: Exception){
-            e.printStackTrace()
             return ApiState.Failure(e.stackTrace.toString())
         }
     }
