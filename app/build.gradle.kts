@@ -87,6 +87,10 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:8.0.1")
 // Source: https://mvnrepository.com/artifact/androidx.navigation/navigation-compose
     implementation("androidx.navigation:navigation-compose:2.9.7")
+    // Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-core
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    // Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-extended
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.converter.gson)

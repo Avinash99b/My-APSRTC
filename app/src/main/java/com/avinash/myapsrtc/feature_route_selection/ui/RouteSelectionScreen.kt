@@ -1,50 +1,33 @@
 package com.avinash.myapsrtc.feature_route_selection.ui
 
-import android.graphics.Paint
-import android.util.Log
+import android.graphics.drawable.Icon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.asLiveData
 import com.avinash.myapsrtc.core.domain.model.ApiState
 import com.avinash.myapsrtc.core.domain.model.Place
 import com.avinash.myapsrtc.feature_route_selection.viewmodel.RouteSelectionViewModel
-import javax.inject.Inject
 
 @Composable
 fun RouteSelectionScreen(
@@ -56,32 +39,212 @@ fun RouteSelectionScreen(
     LaunchedEffect(Unit) {
         routeSelectionViewModel.initialize()
     }
+    
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         when (val state = placesState) {
             ApiState.Loading,
             ApiState.Pending -> {
-                Text(
-                    text = "Loading places...",
-                    fontWeight = FontWeight.Medium
-                )
+                CircularProgressIndicator(color = Color(0xFF00C853))
             }
 
             is ApiState.Failure -> {
                 Text(
-                    text = "Failed to load places",
-                    color = Color.Red
+                    text = "Failed to load places. Please check your connection.",
+                    color = Color.Red,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(24.dp)
                 )
             }
 
             is ApiState.Success<List<Place>> -> {
                 RouteSelectionComponent(
-                    routeSelectionViewModel,
-                    onRouteConfirmed = { from, to ->
-                        onRouteSelected(from, to)
-                    }
+                    viewModel = routeSelectionViewModel,
+                    onRouteConfirmed = onRouteSelected
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RouteSelectionComponent(
+    viewModel: RouteSelectionViewModel,
+    onRouteConfirmed: (Place, Place) -> Unit
+) {
+    val unfilteredPlaces = viewModel.allPlaces
+    val filteredPlaces by viewModel.filteredPlaces.collectAsState()
+    
+    var origin by remember { mutableStateOf<Place?>(null) }
+    var destination by remember { mutableStateOf<Place?>(null) }
+
+    LaunchedEffect(unfilteredPlaces) {
+        if (unfilteredPlaces.isEmpty()) return@LaunchedEffect
+        if (origin == null) origin = unfilteredPlaces.find { it.placeId == "4851" }
+        if (destination == null) destination = unfilteredPlaces.find { it.placeId == "14701" }
+    }
+
+    var showOriginPicker by remember { mutableStateOf(false) }
+    var showDestinationPicker by remember { mutableStateOf(false) }
+
+    RouteSelectionContent(
+        origin = origin,
+        destination = destination,
+        onOriginClick = { showOriginPicker = true },
+        onDestinationClick = { showDestinationPicker = true },
+        onSwapClick = {
+            val temp = origin
+            origin = destination
+            destination = temp
+        },
+        onConfirmClick = {
+            if (origin != null && destination != null) {
+                onRouteConfirmed(origin!!, destination!!)
+            }
+        }
+    )
+
+    if (showOriginPicker) {
+        PlacePickerBottomSheet(
+            title = "Select Origin",
+            viewModel = viewModel,
+            places = filteredPlaces,
+            onSelected = {
+                origin = it
+            },
+            onDismiss = { showOriginPicker = false }
+        )
+    }
+
+    if (showDestinationPicker) {
+        PlacePickerBottomSheet(
+            title = "Select Destination",
+            viewModel = viewModel,
+            places = filteredPlaces,
+            onSelected = { destination = it },
+            onDismiss = { showDestinationPicker = false }
+        )
+    }
+}
+
+@Composable
+fun RouteSelectionContent(
+    origin: Place?,
+    destination: Place?,
+    onOriginClick: () -> Unit,
+    onDestinationClick: () -> Unit,
+    onSwapClick: () -> Unit,
+    onConfirmClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(0.92f)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF1E1E1E), Color(0xFF121212))
+                ),
+                shape = RoundedCornerShape(28.dp)
+            )
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Plan Your Route",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PlaceSelectorField(
+                    label = "From",
+                    selected = origin,
+                    icon = Icons.Default.RadioButtonChecked,
+                    iconColor = Color(0xFF00C853),
+                    onClick = onOriginClick
+                )
+
+                PlaceSelectorField(
+                    label = "To",
+                    selected = destination,
+                    icon = Icons.Default.LocationOn,
+                    iconColor = Color.Red,
+                    onClick = onDestinationClick
+                )
+            }
+
+            // Swap Button
+            IconButton(
+                onClick = onSwapClick,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 8.dp, top = 40.dp) // Adjusted to be between the two fields
+                    .size(44.dp)
+                    .background(Color(0xFF2C2C2C), CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SwapVert,
+                    contentDescription = "Swap Locations",
+                    tint = Color.White
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        ConfirmButton(
+            enabled = origin != null && destination != null,
+            onClick = onConfirmClick
+        )
+    }
+}
+
+@Composable
+fun PlaceSelectorField(
+    label: String,
+    selected: Place?,
+    icon: ImageVector,
+    iconColor: Color,
+    onClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.Gray,
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+        )
+
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF262626),
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = selected?.placeName ?: "Select $label",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (selected == null) Color.Gray else Color.White,
+                    fontWeight = if (selected == null) FontWeight.Normal else FontWeight.SemiBold
                 )
             }
         }
@@ -93,20 +256,23 @@ fun ConfirmButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
+    Button(
+        onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .background(
-                color = if (enabled) Color(0xFF00C853) else Color.DarkGray,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable(enabled = enabled) { onClick() },
-        contentAlignment = Alignment.Center
+            .height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF00C853),
+            contentColor = Color.Black,
+            disabledContainerColor = Color.DarkGray,
+            disabledContentColor = Color.Gray
+        )
     ) {
         Text(
             text = "Confirm Route",
-            color = Color.Black,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold
         )
     }
@@ -117,36 +283,53 @@ fun ConfirmButton(
 fun PlacePickerBottomSheet(
     title: String,
     viewModel: RouteSelectionViewModel,
+    places: List<Place>,
     onSelected: (Place) -> Unit,
-    onDismiss: () -> Unit,
-    places: List<Place>
+    onDismiss: () -> Unit
 ) {
     val query by viewModel.searchQuery.collectAsState()
 
-    LaunchedEffect(places) {
-        Log.d("Places", "Places Size:- " + places.size)
-    }
     ModalBottomSheet(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        contentColor = Color.White,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
     ) {
-        Column {
-
+        Column(
+            modifier = Modifier
+                .fillMaxHeight(0.8f)
+                .padding(horizontal = 16.dp)
+        ) {
             Text(
                 text = title,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
 
             OutlinedTextField(
                 value = query,
                 onValueChange = viewModel::onSearchQueryChange,
-                placeholder = { Text("Type place name / district / pincode") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                placeholder = { Text("Search city, district, or pincode") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF00C853),
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color(0xFF00C853),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
+                singleLine = true
             )
 
-            LazyColumn {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 items(
                     items = places,
                     key = { it.placeId }
@@ -167,124 +350,52 @@ fun PlaceRow(
     place: Place,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp)
+    Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Text(place.placeName, fontWeight = FontWeight.SemiBold)
-        Text(
-            "${place.district} • ${place.pinCode}",
-            color = Color.Gray,
-            fontSize = MaterialTheme.typography.bodySmall.fontSize
-        )
-    }
-}
-
-@Composable
-fun PlaceSelectorField(
-    label: String,
-    selected: Place?,
-    onClick: () -> Unit
-) {
-    Column {
-        Text(label, color = Color.Gray)
-
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFF1C1C1C), RoundedCornerShape(14.dp))
-                .clickable { onClick() }
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.CenterStart
+                .padding(12.dp)
         ) {
             Text(
-                text = selected?.placeName ?: "Search $label",
-                color = if (selected == null) Color.Gray else Color.White,
-                fontWeight = FontWeight.Medium
+                text = place.placeName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+            Text(
+                text = "${place.district} • ${place.pinCode}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
             )
         }
     }
 }
 
+// Previews
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
-fun RouteSelectionComponent(
-    viewModel: RouteSelectionViewModel,
-    onRouteConfirmed: (Place, Place) -> Unit
-) {
-    val unfilteredPlaces = viewModel.allPlaces
-    val places by viewModel.filteredPlaces.collectAsState()
-    var origin by remember { mutableStateOf<Place?>(null) }
-    var destination by remember { mutableStateOf<Place?>(null) }
+fun RouteSelectionContentPreview() {
+    val dummyPlace1 = Place("Guntur", "16.3", "1", "80.4", "Guntur", "522001", "4851", "Vijayawada", "AP")
+    val dummyPlace2 = Place("Krishna", "16.5", "2", "80.6", "Vijayawada", "520001", "14701", "Guntur", "AP")
 
-    LaunchedEffect(Unit) {
-        if(unfilteredPlaces.isEmpty())return@LaunchedEffect
-        val defaultOrigin = unfilteredPlaces.find { it.placeId == "4851" }
-        val defaultDestination = unfilteredPlaces.find{it.placeId == "14701"}
+    RouteSelectionContent(
+        origin = dummyPlace1,
+        destination = dummyPlace2,
+        onOriginClick = {},
+        onDestinationClick = {},
+        onSwapClick = {},
+        onConfirmClick = {}
+    )
+}
 
-        if(defaultDestination==null||defaultOrigin==null)return@LaunchedEffect
-        origin=defaultOrigin
-        destination=defaultDestination
-    }
-
-    var showOriginPicker by remember { mutableStateOf(false) }
-    var showDestinationPicker by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth(0.9f)
-            .fillMaxHeight(0.65f)
-            .background(Color(0xFF111111), RoundedCornerShape(24.dp))
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-
-        Text(
-            "Plan Your Route",
-            color = Color.White,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        PlaceSelectorField("Origin", origin) {
-            showOriginPicker = true
-        }
-
-        PlaceSelectorField("Destination", destination) {
-            showDestinationPicker = true
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        ConfirmButton(
-            enabled = origin != null && destination != null,
-            onClick = { onRouteConfirmed(origin!!, destination!!) }
-        )
-    }
-
-    if (showOriginPicker) {
-        PlacePickerBottomSheet(
-            title = "Select Origin",
-            viewModel = viewModel,
-            onSelected = {
-                origin = it
-                destination = null
-            },
-            onDismiss = { showOriginPicker = false },
-            places = places
-        )
-    }
-
-    if (showDestinationPicker) {
-        PlacePickerBottomSheet(
-            title = "Select Destination",
-            viewModel = viewModel,
-            onSelected = { destination = it },
-            onDismiss = { showDestinationPicker = false },
-            places = places
-        )
-    }
+@Preview(showBackground = true, backgroundColor = 0xFF121212)
+@Composable
+fun PlaceRowPreview() {
+    val dummyPlace = Place("District Name", "0.0", "1", "0.0", "Mandal Name", "500001", "123", "Example Place", "ST")
+    PlaceRow(place = dummyPlace, onClick = {})
 }
