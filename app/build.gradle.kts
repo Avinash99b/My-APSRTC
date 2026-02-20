@@ -16,8 +16,6 @@ if (localPropertiesFile.exists()) {
         localProperties.load(input)
     }
 }
-println(">>> MAPS_API_KEY = ${localProperties.getProperty("mapkey")}")
-
 android {
     namespace = "com.avinash.myapsrtc"
     compileSdk {
@@ -35,7 +33,8 @@ android {
 
 
         val mapsKey = localProperties.getProperty("mapkey")
-            ?: error("❌ MAPS_API_KEY is missing. Check local.properties")
+            ?: System.getenv("MAPS_API_KEY")
+            ?: ""
 
         manifestPlaceholders["MAPS_API_KEY"] = mapsKey
     }
