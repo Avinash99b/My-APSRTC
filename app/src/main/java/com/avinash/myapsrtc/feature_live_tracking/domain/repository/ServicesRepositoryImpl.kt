@@ -19,13 +19,8 @@ class ServicesRepositoryImpl @Inject constructor(
         startPlace: Place,
         destinationPlace: Place
     ): ApiState<List<ServiceDetails>> {
+        val route = Pair(startPlace.placeId, destinationPlace.placeId)
         try{
-            val cachedServices = cacheRepository.getServices(Pair(startPlace.placeId,destinationPlace.placeId))
-            if(cachedServices != null){
-                Log.d("ServiceRepository","Using cached services")
-                return ApiState.Success(cachedServices)
-            }
-
             val services = servicesApi.getServicesForRoute(GetServicesForRouteDto(
                 destinationLinkId = destinationPlace.linkPlaceId.toInt(),
                 destinationPlaceId = destinationPlace.placeId.toInt(),
@@ -33,11 +28,16 @@ class ServicesRepositoryImpl @Inject constructor(
                 sourcePlaceId = startPlace.placeId.toInt()
             ))
 
-            cacheRepository.cacheServices(services.data)
+            cacheRepository.cacheServices(route, services.data)
 
             return ApiState.Success(services.data)
         }catch (e: Exception){
             e.printStackTrace()
+            val cachedServices = cacheRepository.getServices(route)
+            if(cachedServices != null){
+                Log.d("ServiceRepository","Request failed, using cached services")
+                return ApiState.Success(cachedServices)
+            }
             return ApiState.Failure(e.stackTrace.toString())
         }
     }
