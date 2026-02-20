@@ -33,7 +33,7 @@ class ServicesRepositoryImpl @Inject constructor(
                 sourcePlaceId = startPlace.placeId.toInt()
             ))
 
-            cacheRepository.cacheServices(services.data)
+            cacheRepository.cacheServices(Pair(startPlace.placeId, destinationPlace.placeId), services.data)
 
             return ApiState.Success(services.data)
         }catch (e: Exception){
